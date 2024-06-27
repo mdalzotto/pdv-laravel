@@ -1,0 +1,71 @@
+version: "3.8"
+
+networks:
+  laravel_network:
+    driver: bridge
+
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: docker/php/DockerFile
+    container_name: laravel-app
+    restart: always
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+      - ./application:/var/www/application
+    environment:
+      - COMPOSER_HOME=/composer
+      - COMPOSER_ALLOW_SUPERUSER=1
+      - APP_ENV=local
+      - APP_KEY=base64:tV10Z6/BnqEQ+bkw6pOFhBNLjx6AE7R2w/tQ+NIV0LA=
+    depends_on:
+      - db
+      - redis
+    networks:
+      - laravel_network
+
+  nginx:
+    image: nginx:1.25.1-alpine-slim
+    container_name: laravel-nginx
+    restart: always
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./application:/var/www/application
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - laravel_network
+
+  redis:
+    image: redis:latest
+    container_name: laravel-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+    networks:
+      - laravel_network
+
+  db:
+    image: mysql:8.0.30-debian
+    container_name: laravel-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - laravel_network
+
+volumes:
+  redis:
+  db:
